@@ -537,6 +537,22 @@ function! fzf#vim#_recent_files()
     \ 'fnamemodify(v:val, ":~:.")'))
 endfunction
 
+" Insert symlink targets {D,P} (resolved as in gutentags implementation)
+function! fzf#vim#symlink_sub(lst)
+  let s:D = fnamemodify(fnamemodify(resolve(expand('~/D', 1)), ':p:h'), ':~')[2:]
+  let s:P = fnamemodify(fnamemodify(resolve(expand('~/P', 1)), ':p:h'), ':~')[2:]
+
+  let a = map(map(a:lst,
+              \ 'fnamemodify(v:val, ":gs?' . s:P . '?P?")'),
+              \ 'fnamemodify(v:val, ":gs?' . s:D . '?D?")')
+
+  " Debugging log
+  " call writefile(a:lst + ["\n","\n",], $HOME . "/debug.txt")
+  " call writefile(a, $HOME . "/debug.txt", "a")
+
+  return a
+endfunction
+
 function! s:history_source(type)
   let max  = histnr(a:type)
   let fmt  = s:yellow(' %'.len(string(max)).'d ', 'Number')
@@ -594,7 +610,7 @@ endfunction
 
 function! fzf#vim#history(...)
   return s:fzf('history-files', {
-  \ 'source':  fzf#vim#_recent_files(),
+  \ 'source':  fzf#vim#symlink_sub(fzf#vim#_recent_files()),
   \ 'options': ['-m', '--header-lines', !empty(expand('%')), '--prompt', 'Hist> ']
   \}, a:000)
 endfunction
@@ -721,7 +737,7 @@ function! fzf#vim#buffers(...)
   let header_lines = '--header-lines=' . (bufnr('') == get(sorted, 0, 0) ? 1 : 0)
   let tabstop = len(max(sorted)) >= 4 ? 9 : 8
   return s:fzf('buffers', {
-  \ 'source':  map(sorted, 'fzf#vim#_format_buffer(v:val)'),
+  \ 'source':  fzf#vim#symlink_sub(map(sorted, 'fzf#vim#_format_buffer(v:val)')),
   \ 'sink*':   s:function('s:bufopen'),
   \ 'options': ['+m', '-x', '--tiebreak=index', header_lines, '--ansi', '-d', '\t', '--with-nth', '3..', '-n', '2,1..2', '--prompt', 'Buf> ', '--query', query, '--preview-window', '+{2}-/2', '--tabstop', tabstop]
   \}, args)
