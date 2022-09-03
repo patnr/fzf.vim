@@ -537,20 +537,27 @@ function! fzf#vim#_recent_files()
     \ 'fnamemodify(v:val, ":~:.")'))
 endfunction
 
-" Insert symlink targets {D,P} (resolved as in gutentags implementation)
+" Insert symlink targets {D,P}
 function! fzf#vim#symlink_sub(lst)
-  let s:D = fnamemodify(fnamemodify(resolve(expand('~/D', 1)), ':p:h'), ':~')[2:]
-  let s:P = fnamemodify(fnamemodify(resolve(expand('~/P', 1)), ':p:h'), ':~')[2:]
-
-  let a = map(map(a:lst,
-              \ 'fnamemodify(v:val, ":gs?' . s:P . '?P?")'),
-              \ 'fnamemodify(v:val, ":gs?' . s:D . '?D?")')
+  " Resolv {D,P} as in gutentags implementation
+  let s:D = fnamemodify(fnamemodify(resolve(expand('~/D', 1)), ':p:h'), ':~')
+  let s:P = fnamemodify(fnamemodify(resolve(expand('~/P', 1)), ':p:h'), ':~')
+  " Strip leading "~/" *or* "/"
+  let s:D = substitute(s:D, "^[~/]*", "", "")
+  let s:P = substitute(s:P, "^[~/]*", "", "")
 
   " Debugging log
   " call writefile(a:lst + ["\n","\n",], $HOME . "/debug.txt")
-  " call writefile(a, $HOME . "/debug.txt", "a")
 
-  return a
+  let shortened = map(map(a:lst,
+              \ 'fnamemodify(v:val, ":gs?[~/]*' . s:P . '?~/P?")'),
+              \ 'fnamemodify(v:val, ":gs?[~/]*' . s:D . '?~/D?")')
+
+  " Debugging log
+  " call writefile([s:D, s:P] + ["\n","\n",], $HOME . "/debug.txt", "a")
+  " call writefile(shortened, $HOME . "/debug.txt", "a")
+
+  return shortened
 endfunction
 
 function! s:history_source(type)
